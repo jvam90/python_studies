@@ -1,0 +1,149 @@
+1)Instalação do python e do pip
+
+Dependendo do sistema operacional, python já vem incluso na sua instalação. Linux e MacOS são exemplos, e é possível verificar por:
+python3 --version (em um terminal)
+
+Talvez seja necessária a instalação do pip, o instalador de pacotes do python: apt install python3-pip (linux).
+
+2)Criação de um ambiente virtual (.venv)
+
+Ao usar o pip, os pacotes baixados vão para onde a instalação do python está. Isso pode ser ruim ao trabalhar em diversos projetos
+e com versões diferentes dos pacotes. Por isso, é recomendada a criação de um ambiente virtual, que irá gerenciar os pacotes
+para determinado workspace
+
+-python3 -m venv .venv -> vai criar uma pasta oculta 'venv' que irá gerenciar os pacotes
+-após a criação do ambiente virtual, é necessário dizer que ele será utilizado. No vscode, é preciso executar o comando 
+python: select environment, e apontar para o diretório criado no projeto desejado
+-agora é necessário ativá-lo: source .venv/bin/activate -> o terminal deve ficar assim: (.venv) joao@pop-os:~/Documentos/python/flask_tutorial$
+com o (.venv) na frente. Agora podemos instlar nossos pacotes, por exemplo, flask: 'pip install flask'
+
+
+-----------
+
+Desenvolvimento web com flask
+
+Flask é um framework web minimalista para criação de aplicações web utilizando python. Eis um exemplo básico:
+
+from flask import Flask
+
+app = Flask(__name__)
+
+@app.get("/stores") #decorador para dizer que o método vai ser invocado ao receber um GET em /stores
+def get_stores():
+    return {"stores": stores}
+
+Uma forma tradicional de trabalhar com flask é com APIs e JSON. Acima, o que é enviado para o cliente é um dicionário em python.
+No entanto, ele é 'stringficado' para poder ser passado como JSON. E é isso que o cliente recebe: uma string.
+
+Há alguns detalhes:
+
+-Em python, booleanos são True ou False. Ao passar como string, o cliente recebe 'true' ou 'false'
+-JSON pode ser formatado
+-JSON consome menos dados (mais leve) que um dicionário em python, por isso, é stringficado
+
+As funções definidas com os decoradores dos verbos http são chamadas de view functions. Por padrão, elas devem retornar algo 
+que não seja None, assim, deve retornar um status e algum tipo de mensagem para o cliente.
+
+Por exemplo:
+
+@app.post("/stores")
+def create_store():
+    request_data = request.get_json()
+    new_store = {"name": request_data["name"], "active": True, "items": request_data["items"]}
+    stores.append(new_store)
+    return new_store, 201 -> ao terminar, vai retornar o item criado e um código de status
+
+É possível passar valores/parâmetros para um endpoint:
+
+1-request: um objeto default do flask que representa a requisição atual
+2-passar pela url: 
+
+@app.post("/stores/<string:name>")
+def test(name)
+
+O objeto request possui o método get_json() que vai devolver o corpo da requisição em formato JSON (stringficado)
+Pela url, define-se o parâmetro entre <> e seu tipo: <string:name>. Ou seja, vai receber uma string e seu nome vai ser 'name'.
+Na função, ela é recebida por parâmetero:
+
+def test(name)
+
+O que deve ser retornado geralmente vai ser um dicionário em python. Mesmo que seja apenas um item, ou uma lista, sempre que possível,
+retornar um dicionário:
+
+return {"item": item} ou {"items": items (sendo itens um array)}
+
+=====
+
+Docker
+
+Se usamos um sistema como windows, e queremos executar outro sistema operacional em cima dele, como um linux, precisamos de uma
+máquina virtual.
+
+Numa hierarquia, seria:
+
+1-hardware
+2-sistema operacional hospedeiro
+3-hypervisor, ou algo que permita a execução de outro sistema operacional 
+4-sistema operacional "visitante"
+5-aplicativos do sistema operacional "visitante"
+
+Essa abordagem não é muito eficiente, pois depende que o sistema "visitante" seja instalado completamente, e que seja capaz de comunicar
+com o hypervisor. Essa abordagem é a de usar máquinas virtuais.
+
+O hypervisor dita quanto de hw o sistema "visitante" pode usar.
+
+Docker usa containers de forma semelhante.
+
+1-hardware
+2-sistema operacional hospedeiro
+3-Docker
+4-containers
+5-processos
+
+O Docker roda nativamente no hospedeiro, criando containers que se tornam processos, sendo capazes de executar programas.
+Os containers se comunicam diretamente com o kernel do hospedeiro, sem precisar de um hypervisor. No entanto, os containers
+por usarem o kernel do os hospedeiro, pode-se dizer que eles executam o mesmo os que o hospedeiro.
+
+Kernel: um os tem duas partes: kernel e arquivos/programas. O kernel geralmente interage com o hardware. 
+Quando um container docker é executado, ele roda tudo menos o kernel, pois pega o do hospedeiro. Eles são baseados em imagens
+que servem para criar container. A imagem docker tem código, dependências, etc para rodar algo no container.
+
+Dockerfile: definição de uma imagem.
+
+FROM python:3.10 -> a imagem é baseada em outra (python:3.10)
+EXPOSE 5000 -> vai permitir conexões na porta 5000 quando o container estiver funcionando
+WORKDIR /app -> usará um diretório /app
+RUN pip install flask -> ao rodar, vai executar o comando para instalar o flask
+COPY . . (copia algo do diretório fonte para o destino no container)
+CMD ["flask", "run", "--host", "0.0.0.0"] (executa algo quando o container estiver rodando)
+
+As duas últimas linhas significam que o código que estiver no diretório da imagem vai ser copiado para o container, e depois o comando
+flask run vai ser executado. Em resumo: vai criar um container com algum sistema operacional, a partir do python:3.10, instalar o flask
+e dispor uma aplicação na porta 5000
+
+
+docker build -t rest-apis-flask-python .
+
+Cria uma imagem a partir do Dockerfile. -t é para dar uma tag e o ponto no final indica que o Dockerfile está no mesmo diretório.
+
+DockerCompose: permite subir mais de um container com diversos serviços. É um arquivo docker-compose.yml
+
+Um exemplo:
+
+services:
+  web:
+    build: .
+    ports:
+      - "5000:5000"
+    volumes:
+      - .:/app
+
+services: declara os serviços que queremos
+-web é o nome de um deles.
+--build: aponta para onde está o nosso arquivo Dockerfile
+--ports: mapeamento da porta de nossa aplicação no hospedeiro e no container respectivamente
+--volumes: estamos mapeando a pasta do projeto para uma pasta chamada /app no container
+
+No Dockerfile temos o WORKDIR, que é onde no container vai estar a aplicação.
+No DockerCompose, mapeamos o volume da pasta do projeto local no diretório /app do container, que é o mesmo do WORKDIR. Assim,
+qualquer mudança é refletida automaticamente.
