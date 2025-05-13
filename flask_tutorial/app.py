@@ -40,11 +40,11 @@ def create_store():
 
     store_id = uuid.uuid4().hex
     new_store = {**store_data, "id": store_id}
-    stores.append(new_store)
-    return new_store, 201
+    stores[store_id] = new_store
+    return stores[store_id], 201
 
 # agora o id da loja é passado no payload
-@app.post("/item")
+@app.post("/items")
 def create_item():
     item_data = request.get_json()
 
@@ -54,10 +54,18 @@ def create_item():
     if item_data["store_id"] not in stores:
         abort(404, message="Store not found")
 
-    for item in items.values:
+    for item in items.values():
         if (item["name"] == item_data["name"] and item["store_id"] == item_data["store_id"]):
             abort(400, message="Cannot add the same item more than once.")
 
     item_id = uuid.uuid4().hex
     new_item = {**item_data, "id": item_id}
     items[item_id] = new_item
+    return items[item_id], 201
+
+@app.delete("/items/<string:item_id>")
+def delete_item(item_id):
+    try:
+        return items.pop(item_id)
+    except KeyError:
+        abort(404, message="Item not found.")
