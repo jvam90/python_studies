@@ -1,0 +1,23 @@
+É possível definir um arquivo com todas as dependências em um projeto flask: requirements.txt.
+
+flask
+flask-smorest
+python-dotenv
+
+Semelhante a um package.json, ele tem as dependências daquele projeto. Outro arquivo que pode-se usar é o .flaskenv, que
+serve para guardar variáveis de ambiente:
+
+FLASK_APP=app -> indica ao python qual o arquivo tem a aplicação
+FLASK_DEBUG=1 -> indica que vai ser debug mode (mudando o código, recarrega a aplicação)
+
+Se usar o flaskenv e existir um arquivo .flaskenv, automaticamente o python utiliza as variáveis de ambiente desse arquivo.
+
+---
+
+Tratando de exceções: no geral, se algo dá errado na requisição, retorna-se um dicionário com um código de erro:
+
+    return {"message": "Store not found"}, 404
+
+Com o flask-smorest, temos a função abort, que recebe o código e a mensagem como parâmetros. Ela abora a requisição automaticamente.
+
+    abort(404, message="Store not found")
